@@ -11,7 +11,9 @@ async function requireAdminRequest(request: Request) {
     .map((cookie) => cookie.trim())
     .find((cookie) => cookie.startsWith("session="));
   const token = sessionCookie?.slice("session=".length);
-  const session = token ? await verifySessionToken(token) : null;
+  const session = token
+    ? await verifySessionToken(token).catch(() => null)
+    : null;
 
   return requireAdmin(session);
 }
