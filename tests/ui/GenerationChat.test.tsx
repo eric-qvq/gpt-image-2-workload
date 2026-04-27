@@ -23,12 +23,18 @@ describe("GenerationChat", () => {
           {
             id: "j2",
             role: "assistant",
+            content: "Generation running",
+            status: "running"
+          },
+          {
+            id: "j3",
+            role: "assistant",
             content: "Image ready",
             status: "succeeded",
             images: [{ id: "asset_1", src: "/generated/job_1/0.png", alt: "Red cube" }]
           },
           {
-            id: "j3",
+            id: "j4",
             role: "assistant",
             content: "Provider failed",
             status: "failed"
@@ -45,6 +51,7 @@ describe("GenerationChat", () => {
 
     expect(onSubmit).toHaveBeenCalledWith("Make it blue");
     expect(screen.getByText("queued")).toBeTruthy();
+    expect(screen.getByText("running")).toBeTruthy();
     expect(screen.getByText("succeeded")).toBeTruthy();
     expect(screen.getByText("failed")).toBeTruthy();
     expect(screen.getByAltText("Red cube")).toBeTruthy();

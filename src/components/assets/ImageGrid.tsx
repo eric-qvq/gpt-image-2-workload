@@ -23,6 +23,9 @@ export function ImageGrid({ assets }: ImageGridProps) {
           <a href={asset.src} download>
             Download
           </a>
+          <a href={`/generate?prompt=${encodeURIComponent(asset.prompt)}`}>
+            Reuse
+          </a>
         </article>
       ))}
     </section>

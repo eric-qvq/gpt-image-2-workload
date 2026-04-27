@@ -14,6 +14,13 @@ export default function HistoryPage() {
   return (
     <main>
       <h1>History</h1>
+      <form>
+        <label>
+          Filter
+          <input name="query" placeholder="Prompt, model, or date" />
+        </label>
+        <button type="submit">Apply</button>
+      </form>
       <ImageGrid assets={assets} />
     </main>
   );
