@@ -81,6 +81,15 @@ describe("history APIs", () => {
     const historyBody = await historyResponse.json();
 
     expect(historyResponse.status).toBe(200);
+    expect(mocks.imageAssetFindMany).toHaveBeenCalledWith(
+      expect.objectContaining({
+        where: {
+          job: {
+            userId: "user_1"
+          }
+        }
+      })
+    );
     expect(historyBody.assets[0]).toMatchObject({
       jobId: "job_1",
       localPath: "storage/generated-images/job_1/0.png"

@@ -15,6 +15,11 @@ const mocks = vi.hoisted(() => ({
     updatedAt: new Date("2026-04-27T00:00:00Z"),
     ...data
   })),
+  conversationFindFirst: vi.fn(async () => ({
+    id: "conversation_1",
+    userId: "user_1",
+    title: "Campaign images"
+  })),
   messageCreate: vi.fn(async ({ data }) => ({
     id: "message_1",
     createdAt: new Date("2026-04-27T00:00:00Z"),
@@ -41,7 +46,10 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("../../src/server/db/client", () => ({
   prisma: {
-    conversation: { create: mocks.conversationCreate },
+    conversation: {
+      create: mocks.conversationCreate,
+      findFirst: mocks.conversationFindFirst
+    },
     message: { create: mocks.messageCreate },
     generationJob: { create: mocks.generationJobCreate },
     $transaction: mocks.transaction
@@ -91,6 +99,12 @@ describe("conversation APIs", () => {
     const messageBody = await messageResponse.json();
 
     expect(messageResponse.status).toBe(201);
+    expect(mocks.conversationFindFirst).toHaveBeenCalledWith({
+      where: {
+        id: "conversation_1",
+        userId: "user_1"
+      }
+    });
     expect(messageBody.job).toMatchObject({
       id: "job_1",
       status: "QUEUED"

@@ -63,6 +63,16 @@ export async function POST(request: Request, context: RouteContext) {
     const prompt = requireString(body.prompt, "prompt");
     const providerId = requireString(body.providerId, "providerId");
     const modelId = requireString(body.modelId, "modelId");
+    const conversation = await prisma.conversation.findFirst({
+      where: {
+        id: conversationId,
+        userId: session.userId
+      }
+    });
+
+    if (!conversation) {
+      return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+    }
 
     const result = await prisma.$transaction(async (tx) => {
       const message = await tx.message.create({

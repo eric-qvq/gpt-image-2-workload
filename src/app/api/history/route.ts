@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     const assets = await prisma.imageAsset.findMany({
       where: {
         job: {
-          ...(session.role === "ADMIN" ? {} : { userId: session.userId })
+          userId: session.userId
         }
       },
       include: {
