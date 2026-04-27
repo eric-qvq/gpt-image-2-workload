@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 
 import {
   GenerationChat,
@@ -15,12 +16,27 @@ const providers = [{ id: "provider_1", name: "OpenAI compatible" }];
 const models = [{ id: "model_1", name: "gpt-image-2" }];
 
 export default function GeneratePage() {
+  return (
+    <Suspense fallback={<main>Loading generator...</main>}>
+      <GeneratePageContent />
+    </Suspense>
+  );
+}
+
+function readCount(value: string | null): number {
+  const count = Number(value ?? 1);
+
+  return Number.isFinite(count) && count > 0 ? count : 1;
+}
+
+function GeneratePageContent() {
+  const searchParams = useSearchParams();
   const [parameters, setParameters] = useState<ParameterPanelValue>({
-    providerId: "provider_1",
-    modelId: "model_1",
-    size: "1024x1024",
-    count: 1,
-    quality: "standard"
+    providerId: searchParams.get("providerId") ?? "provider_1",
+    modelId: searchParams.get("modelId") ?? "model_1",
+    size: searchParams.get("size") ?? "1024x1024",
+    count: readCount(searchParams.get("count")),
+    quality: searchParams.get("quality") ?? "standard"
   });
   const [messages, setMessages] = useState<ChatMessage[]>([]);
 
@@ -41,7 +57,11 @@ export default function GeneratePage() {
     <main>
       <h1>Generate Images</h1>
       <div>
-        <GenerationChat messages={messages} onSubmit={handleSubmit} />
+        <GenerationChat
+          initialPrompt={searchParams.get("prompt") ?? ""}
+          messages={messages}
+          onSubmit={handleSubmit}
+        />
         <ParameterPanel
           value={parameters}
           providers={providers}

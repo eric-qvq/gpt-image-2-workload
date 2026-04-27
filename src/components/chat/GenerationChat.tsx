@@ -19,11 +19,16 @@ export type ChatMessage = {
 
 type GenerationChatProps = {
   messages: ChatMessage[];
+  initialPrompt?: string;
   onSubmit: (prompt: string) => void;
 };
 
-export function GenerationChat({ messages, onSubmit }: GenerationChatProps) {
-  const [prompt, setPrompt] = useState("");
+export function GenerationChat({
+  messages,
+  initialPrompt = "",
+  onSubmit
+}: GenerationChatProps) {
+  const [prompt, setPrompt] = useState(initialPrompt);
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();

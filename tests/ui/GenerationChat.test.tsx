@@ -56,4 +56,18 @@ describe("GenerationChat", () => {
     expect(screen.getByText("failed")).toBeTruthy();
     expect(screen.getByAltText("Red cube")).toBeTruthy();
   });
+
+  it("initializes the prompt from reused history links", () => {
+    render(
+      <GenerationChat
+        initialPrompt="Draw a red cube"
+        messages={[]}
+        onSubmit={vi.fn()}
+      />
+    );
+
+    expect((screen.getByLabelText("Prompt") as HTMLTextAreaElement).value).toBe(
+      "Draw a red cube"
+    );
+  });
 });
