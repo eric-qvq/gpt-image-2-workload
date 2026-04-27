@@ -2,7 +2,10 @@
 
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { generateOpenAICompatibleImage } from "../../src/server/providers/adapters/openai-compatible";
+import {
+  ProviderRequestError,
+  generateOpenAICompatibleImage
+} from "../../src/server/providers/adapters/openai-compatible";
 
 describe("OpenAI-compatible image adapter", () => {
   afterEach(() => {
@@ -84,15 +87,23 @@ describe("OpenAI-compatible image adapter", () => {
       })
     ).resolves.toEqual([{ b64Json: "abc123" }]);
 
-    await expect(
-      generateOpenAICompatibleImage({
-        baseUrl: "https://api.example.com/v1",
-        apiKey: "sk-test",
-        request: {
-          prompt: "Draw a red cube",
-          model: "gpt-image-2"
-        }
-      })
-    ).rejects.toThrow("Provider request failed with 400: bad request");
+    const failedRequest = generateOpenAICompatibleImage({
+      baseUrl: "https://api.example.com/v1",
+      apiKey: "sk-test",
+      request: {
+        prompt: "Draw a red cube",
+        model: "gpt-image-2"
+      }
+    });
+
+    await expect(failedRequest).rejects.toMatchObject({
+      name: "ProviderRequestError",
+      status: 400,
+      payload: { error: { message: "bad request" } }
+    });
+    await expect(failedRequest).rejects.toBeInstanceOf(ProviderRequestError);
+    await expect(failedRequest).rejects.toThrow(
+      "Provider request failed with 400: bad request"
+    );
   });
 });

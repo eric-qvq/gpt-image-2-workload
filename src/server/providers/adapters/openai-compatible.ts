@@ -17,6 +17,18 @@ type ProviderResponse = {
   };
 };
 
+export class ProviderRequestError extends Error {
+  readonly status: number;
+  readonly payload: unknown;
+
+  constructor(status: number, message: string, payload: unknown) {
+    super(`Provider request failed with ${status}: ${message}`);
+    this.name = "ProviderRequestError";
+    this.status = status;
+    this.payload = payload;
+  }
+}
+
 function endpointFor(baseUrl: string): string {
   return `${baseUrl.replace(/\/+$/, "")}/images/generations`;
 }
@@ -57,7 +69,7 @@ export async function generateOpenAICompatibleImage({
 
   if (!response.ok) {
     const message = payload.error?.message ?? response.statusText;
-    throw new Error(`Provider request failed with ${response.status}: ${message}`);
+    throw new ProviderRequestError(response.status, message, payload);
   }
 
   return (payload.data ?? []).map(normalizeImage);
