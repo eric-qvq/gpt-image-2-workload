@@ -1,2 +1,9 @@
+.env
+.next/
+node_modules/
+coverage/
+*.tsbuildinfo
+storage/generated-images/*
+!storage/generated-images/.gitkeep
 .superpowers/
 .worktrees/
