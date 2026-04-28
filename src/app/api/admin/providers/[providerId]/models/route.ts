@@ -5,7 +5,7 @@ import { verifySessionToken } from "@/server/auth/session";
 import { createModel, listModelsForProvider } from "@/server/providers/repository";
 
 type RouteContext = {
-  params: Promise<{ providerId: string }> | { providerId: string };
+  params: Promise<{ providerId: string }>;
 };
 
 async function requireAdminRequest(request: Request) {

@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: gpt_image_platform
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d gpt_image_platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    command: sh -c "npx prisma db push && npm run dev"
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/gpt_image_platform"
+      AUTH_SECRET: "${AUTH_SECRET:-change-this-secret-before-production}"
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY:-MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}"
+      STORAGE_ROOT: "storage/generated-images"
+      WORKER_POLL_INTERVAL_MS: "${WORKER_POLL_INTERVAL_MS:-2000}"
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - node-modules:/app/node_modules
+      - image-storage:/app/storage/generated-images
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  worker:
+    build: .
+    command: sh -c "npx prisma db push && npm run worker"
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/gpt_image_platform"
+      AUTH_SECRET: "${AUTH_SECRET:-change-this-secret-before-production}"
+      ENCRYPTION_KEY: "${ENCRYPTION_KEY:-MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=}"
+      STORAGE_ROOT: "storage/generated-images"
+      WORKER_POLL_INTERVAL_MS: "${WORKER_POLL_INTERVAL_MS:-2000}"
+    volumes:
+      - .:/app
+      - node-modules:/app/node_modules
+      - image-storage:/app/storage/generated-images
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+volumes:
+  postgres-data:
+  node-modules:
+  image-storage:

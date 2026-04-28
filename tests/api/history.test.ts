@@ -64,7 +64,7 @@ describe("history APIs", () => {
 
     const jobResponse = await getJob(
       authedGet("http://localhost/api/generation-jobs/job_1", token),
-      { params: { jobId: "job_1" } }
+      { params: Promise.resolve({ jobId: "job_1" }) }
     );
     const jobBody = await jobResponse.json();
 

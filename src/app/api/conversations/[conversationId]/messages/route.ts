@@ -6,7 +6,7 @@ import { verifySessionToken } from "../../../../../server/auth/session";
 import { prisma } from "../../../../../server/db/client";
 
 type RouteContext = {
-  params: Promise<{ conversationId: string }> | { conversationId: string };
+  params: Promise<{ conversationId: string }>;
 };
 
 type MessageRequest = {

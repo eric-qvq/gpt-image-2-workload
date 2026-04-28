@@ -5,7 +5,7 @@ import { verifySessionToken } from "../../../../server/auth/session";
 import { prisma } from "../../../../server/db/client";
 
 type RouteContext = {
-  params: Promise<{ jobId: string }> | { jobId: string };
+  params: Promise<{ jobId: string }>;
 };
 
 async function requireSession(request: Request) {

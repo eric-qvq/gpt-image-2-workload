@@ -94,7 +94,7 @@ describe("conversation APIs", () => {
         },
         token
       ),
-      { params: { conversationId: "conversation_1" } }
+      { params: Promise.resolve({ conversationId: "conversation_1" }) }
     );
     const messageBody = await messageResponse.json();
 

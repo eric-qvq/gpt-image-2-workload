@@ -18,7 +18,7 @@ const assets = [
 ];
 
 type HistoryPageProps = {
-  searchParams?: Promise<{ query?: string }> | { query?: string };
+  searchParams?: Promise<{ query?: string }>;
 };
 
 function filterAssets(query: string) {

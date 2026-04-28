@@ -2,39 +2,35 @@
 
 ## Project Structure & Module Organization
 
-This repository is currently a starter project with `README.md` at the root and no source tree yet. Keep root files limited to project metadata and contributor-facing documentation. When implementation begins, use a predictable layout:
-
-```text
-src/        application or library code
-tests/      automated tests mirroring src modules
-assets/     images, fixtures, prompts, or sample outputs
-docs/       design notes and longer documentation
-```
-
-Prefer small, focused modules and name directories after the workflow or component they support.
+This is a Next.js image generation platform. App routes and pages live in `src/app`, reusable UI in `src/components`, server-side auth, provider, job, worker, and storage code in `src/server`, and Prisma models in `prisma/schema.prisma`. Tests live in `tests/` and are grouped by area, such as `tests/auth`, `tests/api`, `tests/ui`, and `tests/worker`. Generated images are stored under `storage/generated-images/`; only `.gitkeep` should be tracked.
 
 ## Build, Test, and Development Commands
 
-No build or test tooling is configured yet. Add commands only when backed by committed files such as `package.json`, `pyproject.toml`, `Makefile`, or similar. Document the final commands in `README.md` and keep them stable. Common patterns to use when appropriate:
+Use `npm.cmd` in PowerShell.
 
-```sh
-npm test        # run JavaScript/TypeScript tests
-npm run build   # build distributable output
-python -m pytest # run Python tests
+```powershell
+npm.cmd install              # install dependencies
+npx.cmd prisma migrate dev   # apply local Postgres schema changes
+npm.cmd run dev              # start the Next.js app
+npm.cmd run worker           # run queued image jobs
+npm.cmd test                 # run Vitest test suite
+npm.cmd run typecheck        # run TypeScript checks
+npm.cmd run build            # create production Next.js build
+docker compose up --build    # run app, worker, and Postgres
 ```
 
 ## Coding Style & Naming Conventions
 
-Follow the conventions of the language introduced. Use descriptive, lowercase file names with separators where helpful, such as `image-queue.ts` or `image_queue.py`. Keep generated assets and sample data clearly named by purpose. If a formatter or linter is added, commit its configuration and include the exact command in the README.
+Write TypeScript with strict types and keep modules small. Use PascalCase for React components, camelCase for functions and variables, and kebab-case for route folders where Next.js expects them. Prefer existing server repository and adapter patterns over ad hoc database or HTTP logic.
 
 ## Testing Guidelines
 
-Add tests with new behavior. Place tests in `tests/` and mirror source names, for example `tests/test_image_queue.py` or `tests/image-queue.test.ts`. Cover core logic, error paths, and regressions for fixed bugs. Until a framework is selected, note any manual verification steps in pull requests.
+Use Vitest for unit, API handler, worker, and component coverage. Put tests near their domain under `tests/<area>/*.test.ts` or `*.test.tsx`. Cover both successful generation flows and failure paths, especially provider errors, auth boundaries, and archive failures.
 
 ## Commit & Pull Request Guidelines
 
-Current history contains only `first commit`, so no detailed convention is established. Use short imperative commit messages, for example `Add image workload runner`. Pull requests should include a summary, test or manual verification notes, linked issues when relevant, and screenshots or sample outputs for visual or generated artifacts.
+Current history uses short Conventional Commit-style messages, for example `feat: add generation APIs` and `fix: complete provider admin and reuse initialization`. Keep commits focused. Pull requests should include a concise summary, verification commands run, linked issues if any, and screenshots for UI changes.
 
-## Agent-Specific Instructions
+## Security & Configuration Tips
 
-Inspect the workspace before editing and preserve existing user changes. Keep documentation concise, update this guide when tooling becomes concrete, and avoid inventing commands or requirements that are not present in the repository.
+Never commit `.env`, API keys, or generated images. `ENCRYPTION_KEY` must decode to 32 bytes because provider keys are encrypted with AES-256-GCM. Configure real provider credentials through `/admin/providers`, not source files.
