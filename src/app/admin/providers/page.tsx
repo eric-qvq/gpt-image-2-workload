@@ -1,9 +1,26 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+
 import { ProviderForm } from "../../../components/admin/ProviderForm";
+import { requireAdmin } from "../../../server/auth/guards";
+import { getSessionFromToken } from "../../../server/auth/request-session";
 import { listProviders } from "../../../server/providers/repository";
 
 export const dynamic = "force-dynamic";
 
+async function requireAdminPageSession() {
+  const cookieStore = await cookies();
+  const session = await getSessionFromToken(cookieStore.get("session")?.value);
+
+  try {
+    return requireAdmin(session);
+  } catch {
+    redirect("/login");
+  }
+}
+
 export default async function AdminProvidersPage() {
+  await requireAdminPageSession();
   const providers = await listProviders().catch(() => []);
 
   return (

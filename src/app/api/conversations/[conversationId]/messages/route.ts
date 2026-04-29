@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import type { Prisma } from "@prisma/client";
 
-import { requireMember } from "../../../../../server/auth/guards";
-import { verifySessionToken } from "../../../../../server/auth/session";
+import { requireMemberRequest } from "../../../../../server/auth/request-session";
 import { prisma } from "../../../../../server/db/client";
 
 type RouteContext = {
@@ -15,20 +14,6 @@ type MessageRequest = {
   modelId?: string;
   requestParams?: Record<string, unknown>;
 };
-
-async function requireSession(request: Request) {
-  const cookieHeader = request.headers.get("cookie") ?? "";
-  const sessionCookie = cookieHeader
-    .split(";")
-    .map((cookie) => cookie.trim())
-    .find((cookie) => cookie.startsWith("session="));
-  const token = sessionCookie?.slice("session=".length);
-  const session = token
-    ? await verifySessionToken(token).catch(() => null)
-    : null;
-
-  return requireMember(session);
-}
 
 async function resolveConversationId(context: RouteContext): Promise<string> {
   const params = await context.params;
@@ -57,7 +42,7 @@ function toErrorResponse(error: unknown): Response {
 
 export async function POST(request: Request, context: RouteContext) {
   try {
-    const session = await requireSession(request);
+    const session = await requireMemberRequest(request);
     const conversationId = await resolveConversationId(context);
     const body = (await request.json()) as MessageRequest;
     const prompt = requireString(body.prompt, "prompt");

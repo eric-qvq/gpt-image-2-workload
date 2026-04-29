@@ -1,26 +1,11 @@
 import { NextResponse } from "next/server";
 
-import { requireAdmin } from "@/server/auth/guards";
-import { verifySessionToken } from "@/server/auth/session";
+import { requireAdminRequest } from "@/server/auth/request-session";
 import { createModel, listModelsForProvider } from "@/server/providers/repository";
 
 type RouteContext = {
   params: Promise<{ providerId: string }>;
 };
-
-async function requireAdminRequest(request: Request) {
-  const cookieHeader = request.headers.get("cookie") ?? "";
-  const sessionCookie = cookieHeader
-    .split(";")
-    .map((cookie) => cookie.trim())
-    .find((cookie) => cookie.startsWith("session="));
-  const token = sessionCookie?.slice("session=".length);
-  const session = token
-    ? await verifySessionToken(token).catch(() => null)
-    : null;
-
-  return requireAdmin(session);
-}
 
 async function resolveProviderId(context: RouteContext): Promise<string> {
   const params = await context.params;

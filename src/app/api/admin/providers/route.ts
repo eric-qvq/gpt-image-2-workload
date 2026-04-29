@@ -1,22 +1,7 @@
 import { NextResponse } from "next/server";
 
-import { requireAdmin } from "@/server/auth/guards";
-import { verifySessionToken } from "@/server/auth/session";
+import { requireAdminRequest } from "@/server/auth/request-session";
 import { createProvider, listProviders } from "@/server/providers/repository";
-
-async function requireAdminRequest(request: Request) {
-  const cookieHeader = request.headers.get("cookie") ?? "";
-  const sessionCookie = cookieHeader
-    .split(";")
-    .map((cookie) => cookie.trim())
-    .find((cookie) => cookie.startsWith("session="));
-  const token = sessionCookie?.slice("session=".length);
-  const session = token
-    ? await verifySessionToken(token).catch(() => null)
-    : null;
-
-  return requireAdmin(session);
-}
 
 function toErrorResponse(error: unknown): Response {
   if (error instanceof Response) {
