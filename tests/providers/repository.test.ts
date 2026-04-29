@@ -5,6 +5,7 @@ import { describe, expect, it, vi } from "vitest";
 import {
   createModel,
   createProvider,
+  listGenerationOptions,
   listModelsForProvider,
   listProviders
 } from "../../src/server/providers/repository";
@@ -109,5 +110,61 @@ describe("provider repository", () => {
 
     expect(models).toHaveLength(1);
     expect(models[0].name).toBe("gpt-image-2");
+  });
+
+  it("lists enabled providers and models for generation controls", async () => {
+    const db = {
+      provider: {
+        findMany: vi.fn(async () => [
+          {
+            id: "provider_1",
+            name: "Proxy",
+            type: "OPENAI_COMPATIBLE" as const,
+            baseUrl: "https://api.example.com/v1",
+            encryptedApiKey: "encrypted",
+            enabled: true,
+            createdAt: new Date("2026-04-27T00:00:00Z"),
+            updatedAt: new Date("2026-04-27T00:00:00Z"),
+            imageModels: [
+              {
+                id: "model_1",
+                providerId: "provider_1",
+                name: "gpt-image-2",
+                defaultParams: { size: "1024x1024" },
+                capabilities: { referenceImages: true },
+                enabled: true,
+                createdAt: new Date("2026-04-27T00:00:00Z"),
+                updatedAt: new Date("2026-04-27T00:00:00Z")
+              }
+            ]
+          }
+        ])
+      }
+    };
+
+    const options = await listGenerationOptions({ db });
+
+    expect(db.provider.findMany).toHaveBeenCalledWith({
+      where: { enabled: true },
+      include: {
+        imageModels: {
+          where: { enabled: true },
+          orderBy: { createdAt: "desc" }
+        }
+      },
+      orderBy: { createdAt: "desc" }
+    });
+    expect(options).toEqual({
+      providers: [{ id: "provider_1", name: "Proxy" }],
+      models: [
+        {
+          id: "model_1",
+          providerId: "provider_1",
+          name: "gpt-image-2",
+          defaultParams: { size: "1024x1024" },
+          capabilities: { referenceImages: true }
+        }
+      ]
+    });
   });
 });

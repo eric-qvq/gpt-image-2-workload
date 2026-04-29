@@ -46,6 +46,10 @@ type ModelRecord = {
   updatedAt: Date;
 };
 
+type ProviderWithModelsRecord = ProviderRecord & {
+  imageModels: ModelRecord[];
+};
+
 type ProviderDb = {
   provider: {
     create(args: { data: Omit<ProviderRecord, "id" | "createdAt" | "updatedAt"> }): Promise<ProviderRecord>;
@@ -60,9 +64,28 @@ type ProviderDb = {
   };
 };
 
+type GenerationOptionsDb = {
+  provider: {
+    findMany(args: {
+      where: { enabled: true };
+      include: {
+        imageModels: {
+          where: { enabled: true };
+          orderBy: { createdAt: "asc" | "desc" };
+        };
+      };
+      orderBy?: { createdAt: "asc" | "desc" };
+    }): Promise<ProviderWithModelsRecord[]>;
+  };
+};
+
 type RepositoryContext = {
   db?: ProviderDb;
   encryptionKey?: string;
+};
+
+type GenerationOptionsContext = {
+  db?: GenerationOptionsDb;
 };
 
 type ProviderInput = z.infer<typeof providerInputSchema>;
@@ -70,6 +93,10 @@ type ModelInput = z.infer<typeof modelInputSchema>;
 
 function resolveDb(db?: ProviderDb): ProviderDb {
   return (db ?? prisma) as ProviderDb;
+}
+
+function resolveGenerationOptionsDb(db?: GenerationOptionsDb): GenerationOptionsDb {
+  return (db ?? prisma) as GenerationOptionsDb;
 }
 
 function withoutEncryptedApiKey(provider: ProviderRecord) {
@@ -129,4 +156,35 @@ export async function listModelsForProvider(
     where: { providerId },
     orderBy: { createdAt: "desc" }
   });
+}
+
+export async function listGenerationOptions(
+  context: GenerationOptionsContext = {}
+) {
+  const providers = await resolveGenerationOptionsDb(context.db).provider.findMany({
+    where: { enabled: true },
+    include: {
+      imageModels: {
+        where: { enabled: true },
+        orderBy: { createdAt: "desc" }
+      }
+    },
+    orderBy: { createdAt: "desc" }
+  });
+
+  return {
+    providers: providers.map((provider) => ({
+      id: provider.id,
+      name: provider.name
+    })),
+    models: providers.flatMap((provider) =>
+      provider.imageModels.map((model) => ({
+        id: model.id,
+        providerId: provider.id,
+        name: model.name,
+        defaultParams: model.defaultParams,
+        capabilities: model.capabilities
+      }))
+    )
+  };
 }

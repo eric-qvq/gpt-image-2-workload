@@ -20,7 +20,7 @@ export type ChatMessage = {
 type GenerationChatProps = {
   messages: ChatMessage[];
   initialPrompt?: string;
-  onSubmit: (prompt: string) => void;
+  onSubmit: (prompt: string) => void | Promise<void>;
 };
 
 export function GenerationChat({
@@ -36,7 +36,7 @@ export function GenerationChat({
 
     if (!trimmedPrompt) return;
 
-    onSubmit(trimmedPrompt);
+    void onSubmit(trimmedPrompt);
     setPrompt("");
   }
 
