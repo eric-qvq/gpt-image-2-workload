@@ -1,27 +1,31 @@
-import { ImageGrid } from "../../components/assets/ImageGrid";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
 
-const assets = [
-  {
-    id: "asset_1",
-    src: "/placeholder-image.png",
-    prompt: "Draw a red cube",
-    providerId: "provider_1",
-    modelId: "model_1",
-    model: "gpt-image-2",
-    createdAt: "2026-04-27",
-    requestParams: {
-      size: "1024x1024",
-      count: 1,
-      quality: "standard"
-    }
-  }
-];
+import { ImageGrid } from "../../components/assets/ImageGrid";
+import { requireMember } from "../../server/auth/guards";
+import { getSessionFromToken } from "../../server/auth/request-session";
+import { listHistoryAssets } from "../../server/history/assets";
+
+export const dynamic = "force-dynamic";
 
 type HistoryPageProps = {
   searchParams?: Promise<{ query?: string }>;
 };
 
-function filterAssets(query: string) {
+type HistoryAsset = Awaited<ReturnType<typeof listHistoryAssets>>[number];
+
+async function requireMemberPageSession() {
+  const cookieStore = await cookies();
+  const session = await getSessionFromToken(cookieStore.get("session")?.value);
+
+  try {
+    return requireMember(session);
+  } catch {
+    redirect("/login");
+  }
+}
+
+function filterAssets(assets: HistoryAsset[], query: string) {
   const normalizedQuery = query.trim().toLowerCase();
 
   if (!normalizedQuery) return assets;
@@ -35,9 +39,11 @@ function filterAssets(query: string) {
 }
 
 export default async function HistoryPage({ searchParams }: HistoryPageProps) {
+  const session = await requireMemberPageSession();
   const params = searchParams ? await searchParams : {};
   const query = params.query ?? "";
-  const filteredAssets = filterAssets(query);
+  const assets = await listHistoryAssets(session).catch(() => []);
+  const filteredAssets = filterAssets(assets, query);
 
   return (
     <main>
