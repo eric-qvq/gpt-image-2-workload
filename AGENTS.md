@@ -11,6 +11,7 @@ Use `npm.cmd` in PowerShell.
 ```powershell
 npm.cmd install              # install dependencies
 npx.cmd prisma migrate dev   # apply local Postgres schema changes
+npm.cmd run db:seed          # create/update the default local admin
 npm.cmd run dev              # start the Next.js app
 npm.cmd run worker           # run queued image jobs
 npm.cmd test                 # run Vitest test suite
