@@ -17,7 +17,7 @@ services:
 
   app:
     build: .
-    command: sh -c "npx prisma db push && npm run dev"
+    command: npm run dev
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/gpt_image_platform"
       AUTH_SECRET: "${AUTH_SECRET:-change-this-secret-before-production}"
@@ -31,12 +31,24 @@ services:
       - node-modules:/app/node_modules
       - image-storage:/app/storage/generated-images
     depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  migrate:
+    build: .
+    command: npx prisma db push
+    environment:
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/gpt_image_platform"
+    volumes:
+      - .:/app
+      - node-modules:/app/node_modules
+    depends_on:
       postgres:
         condition: service_healthy
 
   worker:
     build: .
-    command: sh -c "npx prisma db push && npm run worker"
+    command: npm run worker
     environment:
       DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/gpt_image_platform"
       AUTH_SECRET: "${AUTH_SECRET:-change-this-secret-before-production}"
@@ -48,8 +60,8 @@ services:
       - node-modules:/app/node_modules
       - image-storage:/app/storage/generated-images
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
 volumes:
   postgres-data:
