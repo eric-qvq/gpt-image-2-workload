@@ -145,6 +145,10 @@ export function GenerateWorkspace({
     () => models.filter((model) => model.providerId === parameters.providerId),
     [models, parameters.providerId]
   );
+  const disabledReason =
+    !parameters.providerId || !parameters.modelId
+      ? "Add an enabled provider and model before generating."
+      : undefined;
 
   function updateJobMessage(
     messageId: string,
@@ -275,6 +279,7 @@ export function GenerateWorkspace({
     <div>
       <GenerationChat
         initialPrompt={initialPrompt}
+        disabledReason={disabledReason}
         messages={messages}
         onSubmit={handleSubmit}
       />

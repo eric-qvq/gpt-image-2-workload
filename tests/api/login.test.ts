@@ -3,6 +3,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { POST } from "../../src/app/api/login/route";
+import { POST as logout } from "../../src/app/api/logout/route";
 import { verifySessionToken } from "../../src/server/auth/session";
 
 const secret = "test-secret-with-at-least-32-characters";
@@ -93,5 +94,16 @@ describe("login API", () => {
 
     expect(response.status).toBe(401);
     expect(response.headers.get("set-cookie")).toBeNull();
+  });
+
+  it("clears the session cookie on logout", async () => {
+    const response = await logout();
+    const cookie = response.headers.get("set-cookie") ?? "";
+
+    expect(response.status).toBe(200);
+    expect(cookie).toContain("session=");
+    expect(cookie).toContain("Max-Age=0");
+    expect(cookie).toContain("HttpOnly");
+    expect(cookie).toContain("Path=/");
   });
 });

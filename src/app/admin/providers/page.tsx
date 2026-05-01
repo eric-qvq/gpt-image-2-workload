@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { LogoutButton } from "../../../components/auth/LogoutButton";
 import { ProviderForm } from "../../../components/admin/ProviderForm";
 import { requireAdmin } from "../../../server/auth/guards";
 import { getSessionFromToken } from "../../../server/auth/request-session";
@@ -25,6 +26,7 @@ export default async function AdminProvidersPage() {
 
   return (
     <main>
+      <LogoutButton />
       <h1>Provider Admin</h1>
       <section>
         <h2>Configured providers</h2>

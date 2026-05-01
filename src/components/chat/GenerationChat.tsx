@@ -20,12 +20,14 @@ export type ChatMessage = {
 type GenerationChatProps = {
   messages: ChatMessage[];
   initialPrompt?: string;
+  disabledReason?: string;
   onSubmit: (prompt: string) => void | Promise<void>;
 };
 
 export function GenerationChat({
   messages,
   initialPrompt = "",
+  disabledReason,
   onSubmit
 }: GenerationChatProps) {
   const [prompt, setPrompt] = useState(initialPrompt);
@@ -34,6 +36,7 @@ export function GenerationChat({
     event.preventDefault();
     const trimmedPrompt = prompt.trim();
 
+    if (disabledReason) return;
     if (!trimmedPrompt) return;
 
     void onSubmit(trimmedPrompt);
@@ -70,7 +73,10 @@ export function GenerationChat({
             rows={4}
           />
         </label>
-        <button type="submit">Generate</button>
+        {disabledReason ? <p role="alert">{disabledReason}</p> : null}
+        <button type="submit" disabled={Boolean(disabledReason)}>
+          Generate
+        </button>
       </form>
     </section>
   );

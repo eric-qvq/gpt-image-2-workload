@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
+import { LogoutButton } from "../../components/auth/LogoutButton";
 import { GenerateWorkspace } from "../../components/generate/GenerateWorkspace";
 import { requireMember } from "../../server/auth/guards";
 import { getSessionFromToken } from "../../server/auth/request-session";
@@ -46,6 +47,7 @@ export default async function GeneratePage({ searchParams }: GeneratePageProps) 
 
   return (
     <main>
+      <LogoutButton />
       <h1>Generate Images</h1>
       <GenerateWorkspace
         providers={options.providers}

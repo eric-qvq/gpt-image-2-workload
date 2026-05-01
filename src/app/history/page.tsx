@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { ImageGrid } from "../../components/assets/ImageGrid";
+import { LogoutButton } from "../../components/auth/LogoutButton";
 import { requireMember } from "../../server/auth/guards";
 import { getSessionFromToken } from "../../server/auth/request-session";
 import { listHistoryAssets } from "../../server/history/assets";
@@ -47,6 +48,7 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
 
   return (
     <main>
+      <LogoutButton />
       <h1>History</h1>
       <form method="get">
         <label>

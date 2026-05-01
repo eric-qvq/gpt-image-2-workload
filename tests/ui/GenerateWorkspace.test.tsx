@@ -91,4 +91,16 @@ describe("GenerateWorkspace", () => {
     );
     expect(screen.getByText("succeeded")).toBeTruthy();
   });
+
+  it("disables generation when no enabled provider or model exists", () => {
+    const fetchMock = vi.spyOn(globalThis, "fetch");
+
+    render(<GenerateWorkspace providers={[]} models={[]} />);
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Add an enabled provider and model before generating."
+    );
+    expect(screen.getByRole("button", { name: "Generate" })).toBeDisabled();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
 });
