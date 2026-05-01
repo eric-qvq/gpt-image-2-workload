@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 
 import { LogoutButton } from "../../../components/auth/LogoutButton";
 import { ProviderForm } from "../../../components/admin/ProviderForm";
+import { ProviderModelForm } from "../../../components/admin/ProviderModelForm";
 import { requireAdmin } from "../../../server/auth/guards";
 import { getSessionFromToken } from "../../../server/auth/request-session";
 import { listProviders } from "../../../server/providers/repository";
@@ -58,6 +59,7 @@ export default async function AdminProvidersPage() {
         </table>
       </section>
       <ProviderForm />
+      <ProviderModelForm providers={providers} />
     </main>
   );
 }
