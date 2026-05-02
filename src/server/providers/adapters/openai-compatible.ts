@@ -17,6 +17,11 @@ type ProviderResponse = {
   };
 };
 
+type NonJsonPayload = {
+  contentType: string | null;
+  bodyPreview: string;
+};
+
 export class ProviderRequestError extends Error {
   readonly status: number;
   readonly payload: unknown;
@@ -52,6 +57,21 @@ function normalizeImage(image: ProviderImage): GeneratedImage {
   };
 }
 
+function parseProviderPayload(response: Response, text: string): ProviderResponse {
+  try {
+    return JSON.parse(text) as ProviderResponse;
+  } catch {
+    const contentType = response.headers.get("content-type");
+    const message = `Upstream returned ${contentType ?? "non-JSON content"} instead of JSON. Check the provider API base URL and access permissions.`;
+    const payload: NonJsonPayload = {
+      contentType,
+      bodyPreview: text.slice(0, 300)
+    };
+
+    throw new ProviderRequestError(response.status, message, payload);
+  }
+}
+
 export async function generateOpenAICompatibleImage({
   baseUrl,
   apiKey,
@@ -65,7 +85,7 @@ export async function generateOpenAICompatibleImage({
     },
     body: JSON.stringify(toRequestBody(request))
   });
-  const payload = (await response.json()) as ProviderResponse;
+  const payload = parseProviderPayload(response, await response.text());
 
   if (!response.ok) {
     const message = payload.error?.message ?? response.statusText;

@@ -17,6 +17,14 @@ const providerInputSchema = z.object({
   enabled: z.boolean().default(true)
 });
 
+const providerUpdateInputSchema = z.object({
+  name: z.string().trim().min(1).optional(),
+  type: providerTypeSchema.optional(),
+  baseUrl: z.string().trim().url().optional(),
+  apiKey: z.string().optional(),
+  enabled: z.boolean().optional()
+});
+
 const modelInputSchema = z.object({
   name: z.string().trim().min(1),
   defaultParams: z.record(z.unknown()).default({}),
@@ -53,6 +61,10 @@ type ProviderWithModelsRecord = ProviderRecord & {
 type ProviderDb = {
   provider: {
     create(args: { data: Omit<ProviderRecord, "id" | "createdAt" | "updatedAt"> }): Promise<ProviderRecord>;
+    update(args: {
+      where: { id: string };
+      data: Partial<Omit<ProviderRecord, "id" | "createdAt" | "updatedAt">>;
+    }): Promise<ProviderRecord>;
     findMany(args?: { orderBy?: { createdAt: "asc" | "desc" } }): Promise<ProviderRecord[]>;
   };
   imageModel: {
@@ -89,6 +101,7 @@ type GenerationOptionsContext = {
 };
 
 type ProviderInput = z.infer<typeof providerInputSchema>;
+type ProviderUpdateInput = z.infer<typeof providerUpdateInputSchema>;
 type ModelInput = z.infer<typeof modelInputSchema>;
 
 function resolveDb(db?: ProviderDb): ProviderDb {
@@ -128,6 +141,30 @@ export async function listProviders(context: Pick<RepositoryContext, "db"> = {})
   });
 
   return providers.map(withoutEncryptedApiKey);
+}
+
+export async function updateProvider(
+  providerId: string,
+  input: ProviderUpdateInput,
+  context: RepositoryContext = {}
+) {
+  const data = providerUpdateInputSchema.parse(input);
+  const updateData: Partial<Omit<ProviderRecord, "id" | "createdAt" | "updatedAt">> = {};
+
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.type !== undefined) updateData.type = data.type;
+  if (data.baseUrl !== undefined) updateData.baseUrl = data.baseUrl;
+  if (data.enabled !== undefined) updateData.enabled = data.enabled;
+  if (data.apiKey?.trim()) {
+    updateData.encryptedApiKey = encryptApiKey(data.apiKey, context.encryptionKey);
+  }
+
+  const provider = await resolveDb(context.db).provider.update({
+    where: { id: providerId },
+    data: updateData
+  });
+
+  return withoutEncryptedApiKey(provider);
 }
 
 export async function createModel(

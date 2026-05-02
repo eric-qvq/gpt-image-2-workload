@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { LogoutButton } from "../../../components/auth/LogoutButton";
+import { ProviderEditForm } from "../../../components/admin/ProviderEditForm";
 import { ProviderForm } from "../../../components/admin/ProviderForm";
 import { ProviderModelForm } from "../../../components/admin/ProviderModelForm";
 import { requireAdmin } from "../../../server/auth/guards";
@@ -59,6 +60,7 @@ export default async function AdminProvidersPage() {
         </table>
       </section>
       <ProviderForm />
+      <ProviderEditForm providers={providers} />
       <ProviderModelForm providers={providers} />
     </main>
   );

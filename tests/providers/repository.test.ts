@@ -7,7 +7,8 @@ import {
   createProvider,
   listGenerationOptions,
   listModelsForProvider,
-  listProviders
+  listProviders,
+  updateProvider
 } from "../../src/server/providers/repository";
 
 const encryptionKey = Buffer.from("0123456789abcdef0123456789abcdef").toString("base64");
@@ -17,6 +18,17 @@ function createMockDb() {
     provider: {
       create: vi.fn(async ({ data }) => ({
         id: "provider_1",
+        createdAt: new Date("2026-04-27T00:00:00Z"),
+        updatedAt: new Date("2026-04-27T00:00:00Z"),
+        ...data
+      })),
+      update: vi.fn(async ({ data }) => ({
+        id: "provider_1",
+        name: "Proxy",
+        type: "OPENAI_COMPATIBLE" as const,
+        baseUrl: "https://api.example.com/v1",
+        encryptedApiKey: "existing-encrypted",
+        enabled: true,
         createdAt: new Date("2026-04-27T00:00:00Z"),
         updatedAt: new Date("2026-04-27T00:00:00Z"),
         ...data
@@ -165,6 +177,52 @@ describe("provider repository", () => {
           capabilities: { referenceImages: true }
         }
       ]
+    });
+  });
+
+  it("updates provider settings without requiring a new API key", async () => {
+    const db = createMockDb();
+
+    const provider = await updateProvider(
+      "provider_1",
+      {
+        name: "Updated proxy",
+        type: "OPENAI_COMPATIBLE",
+        baseUrl: "https://new.example.com/v1",
+        apiKey: "",
+        enabled: false
+      },
+      { db, encryptionKey }
+    );
+
+    expect(db.provider.update).toHaveBeenCalledWith({
+      where: { id: "provider_1" },
+      data: {
+        name: "Updated proxy",
+        type: "OPENAI_COMPATIBLE",
+        baseUrl: "https://new.example.com/v1",
+        enabled: false
+      }
+    });
+    expect(provider).not.toHaveProperty("encryptedApiKey");
+  });
+
+  it("rotates encrypted provider keys when a new API key is supplied", async () => {
+    const db = createMockDb();
+
+    await updateProvider(
+      "provider_1",
+      {
+        apiKey: "sk-new-key"
+      },
+      { db, encryptionKey }
+    );
+
+    expect(db.provider.update).toHaveBeenCalledWith({
+      where: { id: "provider_1" },
+      data: expect.objectContaining({
+        encryptedApiKey: expect.not.stringContaining("sk-new-key")
+      })
     });
   });
 });
