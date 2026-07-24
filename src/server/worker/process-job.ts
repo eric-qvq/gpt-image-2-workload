@@ -2,7 +2,8 @@ import { prisma } from "../db/client";
 import {
   markJobArchived,
   markJobFailed,
-  markJobSucceeded
+  markJobSucceeded,
+  requeueJob
 } from "../jobs/repository";
 import { decryptApiKey } from "../providers/encryption";
 import { getProviderAdapter } from "../providers/adapters/registry";
@@ -16,6 +17,7 @@ type WorkerJob = {
   id: string;
   prompt: string;
   requestParams: Record<string, unknown>;
+  retryCount: number;
   provider: {
     type: "OPENAI_OFFICIAL" | "OPENAI_COMPATIBLE" | "CUSTOM_HTTP";
     baseUrl: string;
@@ -42,8 +44,19 @@ type ProcessJobDependencies = {
   markJobSucceeded?: (jobId: string, upstreamResponse: unknown) => Promise<unknown>;
   markJobArchived?: (jobId: string) => Promise<unknown>;
   markJobFailed?: (jobId: string, error: string) => Promise<unknown>;
+  requeueJob?: (jobId: string, retryCount: number, error: string) => Promise<unknown>;
   archiveGeneratedImages?: typeof archiveGeneratedImages;
 };
+
+const DEFAULT_MAX_RETRIES = 2;
+
+function maxRetries(): number {
+  const configured = Number(process.env.WORKER_MAX_RETRIES);
+
+  return Number.isFinite(configured) && configured >= 0
+    ? Math.trunc(configured)
+    : DEFAULT_MAX_RETRIES;
+}
 
 function resolveDb(db?: WorkerDb): WorkerDb {
   return (db ?? prisma) as WorkerDb;
@@ -111,12 +124,20 @@ export async function processGenerationJob(
     if (archiveResult.status === "archived") {
       await (dependencies.markJobArchived ?? markJobArchived)(job.id);
     } else {
-      await failJob(job.id, "Image archive failed");
+      throw new Error("Image archive failed");
     }
   } catch (error) {
-    await failJob(
-      job.id,
-      error instanceof Error ? error.message : "Unknown worker error"
-    );
+    const message = error instanceof Error ? error.message : "Unknown worker error";
+
+    if (job.retryCount < maxRetries()) {
+      await (dependencies.requeueJob ?? requeueJob)(
+        job.id,
+        job.retryCount + 1,
+        message
+      );
+      return;
+    }
+
+    await failJob(job.id, message);
   }
 }

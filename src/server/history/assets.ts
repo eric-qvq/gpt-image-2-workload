@@ -1,6 +1,9 @@
 import type { Session } from "../auth/session";
 import { prisma } from "../db/client";
 
+const DEFAULT_HISTORY_LIMIT = 50;
+const MAX_HISTORY_LIMIT = 100;
+
 type PrimitiveParam = string | number | boolean;
 
 type HistoryAssetRecord = {
@@ -30,7 +33,10 @@ type HistoryDb = {
         };
       };
       orderBy: { createdAt: "asc" | "desc" };
+      take?: number;
+      skip?: number;
     }): Promise<HistoryAssetRecord[]>;
+    count(args: { where: Record<string, unknown> }): Promise<number>;
   };
 };
 
@@ -38,8 +44,29 @@ type HistoryContext = {
   db?: HistoryDb;
 };
 
+type HistoryOptions = {
+  limit?: number;
+  offset?: number;
+};
+
 function resolveDb(db?: HistoryDb): HistoryDb {
   return (db ?? prisma) as HistoryDb;
+}
+
+function normalizeLimit(limit: number | undefined): number {
+  if (!Number.isFinite(limit)) return DEFAULT_HISTORY_LIMIT;
+
+  return Math.min(Math.max(Math.trunc(limit ?? DEFAULT_HISTORY_LIMIT), 1), MAX_HISTORY_LIMIT);
+}
+
+function normalizeOffset(offset: number | undefined): number {
+  if (!Number.isFinite(offset)) return 0;
+
+  return Math.max(Math.trunc(offset ?? 0), 0);
+}
+
+function historyWhere(session: Session): Record<string, unknown> {
+  return session.role === "ADMIN" ? {} : { job: { userId: session.userId } };
 }
 
 function isPrimitiveParam(value: unknown): value is PrimitiveParam {
@@ -62,23 +89,8 @@ function toRequestParams(value: unknown): Record<string, PrimitiveParam> {
   );
 }
 
-export async function listHistoryAssets(
-  session: Session,
-  context: HistoryContext = {}
-) {
-  const assets = await resolveDb(context.db).imageAsset.findMany({
-    where: session.role === "ADMIN" ? {} : { job: { userId: session.userId } },
-    include: {
-      job: {
-        include: {
-          model: true
-        }
-      }
-    },
-    orderBy: { createdAt: "desc" }
-  });
-
-  return assets.map((asset) => ({
+function toHistoryAsset(asset: HistoryAssetRecord) {
+  return {
     id: asset.id,
     src: `/api/image-assets/${asset.id}`,
     prompt: asset.job.prompt,
@@ -87,5 +99,38 @@ export async function listHistoryAssets(
     model: asset.job.model.name,
     createdAt: asset.createdAt.toISOString(),
     requestParams: toRequestParams(asset.job.requestParams)
-  }));
+  };
+}
+
+export async function listHistoryAssets(
+  session: Session,
+  options: HistoryOptions = {},
+  context: HistoryContext = {}
+) {
+  const db = resolveDb(context.db);
+  const where = historyWhere(session);
+  const assets = await db.imageAsset.findMany({
+    where,
+    include: {
+      job: {
+        include: {
+          model: true
+        }
+      }
+    },
+    orderBy: { createdAt: "desc" },
+    take: normalizeLimit(options.limit),
+    skip: normalizeOffset(options.offset)
+  });
+
+  return assets.map(toHistoryAsset);
+}
+
+export async function countHistoryAssets(
+  session: Session,
+  context: HistoryContext = {}
+) {
+  return resolveDb(context.db).imageAsset.count({
+    where: historyWhere(session)
+  });
 }

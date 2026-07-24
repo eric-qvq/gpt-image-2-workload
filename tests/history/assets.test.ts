@@ -27,12 +27,14 @@ describe("history assets", () => {
               }
             }
           }
-        ])
+        ]),
+        count: vi.fn(async () => 1)
       }
     };
 
     const assets = await listHistoryAssets(
       { userId: "user_1", role: "MEMBER" },
+      {},
       { db }
     );
 
@@ -49,7 +51,9 @@ describe("history assets", () => {
           }
         }
       },
-      orderBy: { createdAt: "desc" }
+      orderBy: { createdAt: "desc" },
+      take: 50,
+      skip: 0
     });
     expect(assets).toEqual([
       {

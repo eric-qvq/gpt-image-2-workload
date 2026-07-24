@@ -32,20 +32,28 @@ const mocks = vi.hoisted(() => ({
       jobId: "job_1",
       localPath: "storage/generated-images/job_1/0.png",
       upstreamUrl: "https://example.com/a.png",
+      createdAt: new Date("2026-04-27T00:00:00Z"),
       job: {
         id: "job_1",
         userId: "user_1",
         prompt: "Draw a red cube",
+        providerId: "provider_1",
+        modelId: "model_1",
+        requestParams: { size: "1024x1024" },
         model: { name: "gpt-image-2" }
       }
     }
-  ])
+  ]),
+  imageAssetCount: vi.fn(async () => 1)
 }));
 
 vi.mock("../../src/server/db/client", () => ({
   prisma: {
     generationJob: { findFirst: mocks.generationJobFindFirst },
-    imageAsset: { findMany: mocks.imageAssetFindMany }
+    imageAsset: {
+      findMany: mocks.imageAssetFindMany,
+      count: mocks.imageAssetCount
+    }
   }
 }));
 
@@ -87,12 +95,16 @@ describe("history APIs", () => {
           job: {
             userId: "user_1"
           }
-        }
+        },
+        take: 50,
+        skip: 0
       })
     );
     expect(historyBody.assets[0]).toMatchObject({
-      jobId: "job_1",
-      localPath: "storage/generated-images/job_1/0.png"
+      id: "asset_1",
+      src: "/api/image-assets/asset_1",
+      prompt: "Draw a red cube"
     });
+    expect(historyBody.pagination.total).toBe(1);
   });
 });

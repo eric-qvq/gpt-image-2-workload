@@ -24,7 +24,8 @@ describe("session utilities", () => {
       secret
     );
 
-    const tamperedToken = `${token.slice(0, -1)}x`;
+    const parts = token.split(".");
+    const tamperedToken = [parts[0], parts[1], "tampered-signature"].join(".");
 
     await expect(verifySessionToken(tamperedToken, secret)).rejects.toThrow(
       "Invalid session token"

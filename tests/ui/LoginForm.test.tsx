@@ -10,6 +10,17 @@ describe("LoginForm", () => {
     vi.restoreAllMocks();
   });
 
+  it("requires both credentials and exposes the submit styling hook", () => {
+    render(<LoginForm onSuccess={vi.fn()} />);
+
+    expect(screen.getByLabelText("Account")).toBeRequired();
+    expect(screen.getByLabelText("Password")).toBeRequired();
+    expect(screen.getByRole("button", { name: "Sign in" })).toHaveClass(
+      "login-submit",
+      "primary-button"
+    );
+  });
+
   it("submits credentials and calls onSuccess when login succeeds", async () => {
     const onSuccess = vi.fn();
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValueOnce(

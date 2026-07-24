@@ -51,16 +51,31 @@ export function LoginForm({ onSuccess = defaultSuccess }: LoginFormProps) {
   }
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form className="login-form" onSubmit={handleSubmit}>
       <label>
         Account
-        <input name="account" autoComplete="username" />
+        <input
+          name="account"
+          autoComplete="username"
+          placeholder="admin"
+          required
+        />
       </label>
       <label>
         Password
-        <input name="password" type="password" autoComplete="current-password" />
+        <input
+          name="password"
+          type="password"
+          autoComplete="current-password"
+          placeholder="admin123456"
+          required
+        />
       </label>
-      <button type="submit" disabled={isSubmitting}>
+      <button
+        className="login-submit primary-button"
+        type="submit"
+        disabled={isSubmitting}
+      >
         {isSubmitting ? "Signing in..." : "Sign in"}
       </button>
       {error ? <p role="alert">{error}</p> : null}

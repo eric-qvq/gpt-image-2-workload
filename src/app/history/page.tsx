@@ -1,29 +1,41 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
+import React from "react";
 
 import { ImageGrid } from "../../components/assets/ImageGrid";
-import { LogoutButton } from "../../components/auth/LogoutButton";
-import { requireMember } from "../../server/auth/guards";
-import { getSessionFromToken } from "../../server/auth/request-session";
-import { listHistoryAssets } from "../../server/history/assets";
+import { HistoryToolbar } from "../../components/history/HistoryToolbar";
+import { LocalizedPageHeading } from "../../components/i18n/LocalizedPageHeading";
+import {
+  AuthenticatedAppShell,
+  getAuthenticatedShellContext
+} from "../../components/layout/AuthenticatedAppShell";
+import { requireMemberPageSession } from "../../server/auth/page-session";
+import {
+  countHistoryAssets,
+  listHistoryAssets
+} from "../../server/history/assets";
 
 export const dynamic = "force-dynamic";
 
+const PAGE_SIZE = 50;
+
 type HistoryPageProps = {
-  searchParams?: Promise<{ query?: string }>;
+  searchParams?: Promise<{ query?: string; page?: string }>;
 };
 
 type HistoryAsset = Awaited<ReturnType<typeof listHistoryAssets>>[number];
 
-async function requireMemberPageSession() {
-  const cookieStore = await cookies();
-  const session = await getSessionFromToken(cookieStore.get("session")?.value);
+function readPage(value: string | undefined): number {
+  const page = Math.trunc(Number(value ?? 1));
 
-  try {
-    return requireMember(session);
-  } catch {
-    redirect("/login");
-  }
+  return Number.isFinite(page) && page > 0 ? page : 1;
+}
+
+function pageHref(page: number, query: string): string {
+  const params = new URLSearchParams();
+
+  if (query) params.set("query", query);
+  if (page > 1) params.set("page", String(page));
+
+  return `/history${params.size ? `?${params}` : ""}`;
 }
 
 function filterAssets(assets: HistoryAsset[], query: string) {
@@ -43,25 +55,43 @@ export default async function HistoryPage({ searchParams }: HistoryPageProps) {
   const session = await requireMemberPageSession();
   const params = searchParams ? await searchParams : {};
   const query = params.query ?? "";
-  const assets = await listHistoryAssets(session).catch(() => []);
+  const page = readPage(params.page);
+  const offset = (page - 1) * PAGE_SIZE;
+  const [assets, total] = await Promise.all([
+    listHistoryAssets(session, { limit: PAGE_SIZE, offset }),
+    countHistoryAssets(session)
+  ]).catch(() => [[], 0] as [HistoryAsset[], number]);
   const filteredAssets = filterAssets(assets, query);
+  const hasPrevious = page > 1;
+  const hasNext = offset + PAGE_SIZE < total;
+  const shellContext = await getAuthenticatedShellContext({ session });
 
   return (
-    <main>
-      <LogoutButton />
-      <h1>History</h1>
-      <form method="get">
-        <label>
-          Filter
-          <input
-            name="query"
-            placeholder="Prompt, model, or date"
-            defaultValue={query}
-          />
-        </label>
-        <button type="submit">Apply</button>
-      </form>
+    <AuthenticatedAppShell context={shellContext}>
+      <LocalizedPageHeading
+        id="history-title"
+        copy={{
+          en: {
+            eyebrow: "Archive",
+            title: "History",
+            description: "Search generated images and reuse prior prompts."
+          },
+          zh: {
+            eyebrow: "归档",
+            title: "历史记录",
+            description: "搜索已生成的图片，并复用以前的提示词。"
+          }
+        }}
+      />
+      <HistoryToolbar
+        query={query}
+        page={page}
+        visibleCount={filteredAssets.length}
+        total={total}
+        previousHref={hasPrevious ? pageHref(page - 1, query) : undefined}
+        nextHref={hasNext ? pageHref(page + 1, query) : undefined}
+      />
       <ImageGrid assets={filteredAssets} />
-    </main>
+    </AuthenticatedAppShell>
   );
 }

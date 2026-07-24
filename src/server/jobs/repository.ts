@@ -29,7 +29,7 @@ type JobDb = {
     }): Promise<GenerationJobRecord | null>;
     update(args: {
       where: { id: string };
-      data: Partial<Pick<GenerationJobRecord, "status" | "error" | "upstreamResponse">>;
+      data: Partial<Pick<GenerationJobRecord, "status" | "error" | "upstreamResponse" | "retryCount">>;
     }): Promise<GenerationJobRecord>;
   };
   $transaction<T>(callback: (tx: JobDb) => Promise<T>): Promise<T>;
@@ -97,6 +97,22 @@ export async function markJobFailed(
   return resolveDb(context.db).generationJob.update({
     where: { id: jobId },
     data: { status: "FAILED", error }
+  });
+}
+
+export async function requeueJob(
+  jobId: string,
+  retryCount: number,
+  error: string,
+  context: JobRepositoryContext = {}
+) {
+  return resolveDb(context.db).generationJob.update({
+    where: { id: jobId },
+    data: {
+      status: "QUEUED",
+      retryCount,
+      error
+    }
   });
 }
 

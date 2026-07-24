@@ -6,7 +6,8 @@ import {
   claimNextJob,
   createGenerationJob,
   markJobFailed,
-  markJobSucceeded
+  markJobSucceeded,
+  requeueJob
 } from "../../src/server/jobs/repository";
 
 function createMockDb() {
@@ -99,6 +100,7 @@ describe("generation job repository", () => {
 
     await markJobSucceeded("job_1", { data: [{ url: "https://example.com/a.png" }] }, { db });
     await markJobFailed("job_1", "provider failed", { db });
+    await requeueJob("job_1", 1, "temporary provider failure", { db });
 
     expect(db.generationJob.update).toHaveBeenCalledWith({
       where: { id: "job_1" },
@@ -111,6 +113,14 @@ describe("generation job repository", () => {
     expect(db.generationJob.update).toHaveBeenCalledWith({
       where: { id: "job_1" },
       data: { status: "FAILED", error: "provider failed" }
+    });
+    expect(db.generationJob.update).toHaveBeenCalledWith({
+      where: { id: "job_1" },
+      data: {
+        status: "QUEUED",
+        retryCount: 1,
+        error: "temporary provider failure"
+      }
     });
   });
 });

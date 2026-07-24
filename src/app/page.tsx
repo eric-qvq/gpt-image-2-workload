@@ -1,25 +1,21 @@
-import Link from "next/link";
+import React from "react";
 
-const entries = [
-  { href: "/login", label: "Login" },
-  { href: "/generate", label: "Generate" },
-  { href: "/history", label: "History" },
-  { href: "/admin/providers", label: "Provider Admin" }
-];
+import {
+  AuthenticatedAppShell,
+  getAuthenticatedShellContext
+} from "../components/layout/AuthenticatedAppShell";
+import { OverviewContent } from "../components/overview/OverviewContent";
+import { requireMemberPageSession } from "../server/auth/page-session";
 
-export default function HomePage() {
+export const dynamic = "force-dynamic";
+
+export default async function HomePage() {
+  const session = await requireMemberPageSession();
+  const shellContext = await getAuthenticatedShellContext({ session });
+
   return (
-    <main>
-      <h1>GPT Image Delivery Platform</h1>
-      <nav aria-label="Dashboard entry points">
-        <ul>
-          {entries.map((entry) => (
-            <li key={entry.href}>
-              <Link href={entry.href}>{entry.label}</Link>
-            </li>
-          ))}
-        </ul>
-      </nav>
-    </main>
+    <AuthenticatedAppShell context={shellContext}>
+      <OverviewContent />
+    </AuthenticatedAppShell>
   );
 }

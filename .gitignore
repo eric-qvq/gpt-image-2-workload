@@ -7,3 +7,4 @@ storage/generated-images/*
 !storage/generated-images/.gitkeep
 .superpowers/
 .worktrees/
+.gstack/

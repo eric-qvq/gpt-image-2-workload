@@ -11,6 +11,7 @@ function createMockDb() {
     modelId: "model_1",
     prompt: "Draw a red cube",
     requestParams: { size: "1024x1024", count: 1 },
+    retryCount: 0,
     provider: {
       id: "provider_1",
       type: "OPENAI_COMPATIBLE" as const,
@@ -74,8 +75,42 @@ describe("processGenerationJob", () => {
     expect(markJobFailed).not.toHaveBeenCalled();
   });
 
-  it("marks adapter failures as failed jobs", async () => {
+  it("requeues temporary adapter failures before marking jobs failed", async () => {
     const db = createMockDb();
+    const adapter = vi.fn(async () => {
+      throw new Error("provider failed");
+    });
+    const markJobFailed = vi.fn(async () => undefined);
+    const requeueJob = vi.fn(async () => undefined);
+
+    await processGenerationJob("job_1", {
+      db,
+      getAdapter: vi.fn(() => adapter),
+      decryptApiKey: vi.fn(() => "sk-test"),
+      markJobSucceeded: vi.fn(async () => undefined),
+      markJobArchived: vi.fn(async () => undefined),
+      markJobFailed,
+      requeueJob,
+      archiveGeneratedImages: vi.fn(async () => ({
+        status: "archive_failed" as const,
+        assets: [],
+        failures: []
+      }))
+    });
+
+    expect(requeueJob).toHaveBeenCalledWith("job_1", 1, "provider failed");
+    expect(markJobFailed).not.toHaveBeenCalled();
+  });
+
+  it("marks adapter failures as failed jobs after retries are exhausted", async () => {
+    const db = {
+      generationJob: {
+        findUnique: vi.fn(async () => ({
+          ...await createMockDb().generationJob.findUnique(),
+          retryCount: 2
+        }))
+      }
+    };
     const adapter = vi.fn(async () => {
       throw new Error("provider failed");
     });
@@ -88,6 +123,7 @@ describe("processGenerationJob", () => {
       markJobSucceeded: vi.fn(async () => undefined),
       markJobArchived: vi.fn(async () => undefined),
       markJobFailed,
+      requeueJob: vi.fn(async () => undefined),
       archiveGeneratedImages: vi.fn(async () => ({
         status: "archive_failed" as const,
         assets: [],

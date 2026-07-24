@@ -1,7 +1,10 @@
 "use client";
 
 import React from "react";
+import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState } from "react";
+
+import { useLocalizedCopy } from "../i18n/localization";
 
 type ProviderOption = {
   id: string;
@@ -16,18 +19,59 @@ type ProviderEditFormProps = {
 };
 
 export function ProviderEditForm({ providers }: ProviderEditFormProps) {
+  const router = useRouter();
   const [providerId, setProviderId] = useState(providers[0]?.id ?? "");
   const [status, setStatus] = useState<string | null>(null);
   const selectedProvider = useMemo(
     () => providers.find((provider) => provider.id === providerId) ?? providers[0],
     [providerId, providers]
   );
+  const text = useLocalizedCopy({
+    en: {
+      required: "Save a provider before editing settings.",
+      updating: "Updating provider...",
+      updateError: "Could not update provider.",
+      updated: "Provider updated.",
+      unexpected: "Unexpected error.",
+      title: "Edit provider",
+      provider: "Provider",
+      name: "Provider name",
+      type: "Type",
+      official: "OpenAI official",
+      compatible: "OpenAI compatible",
+      custom: "Custom HTTP",
+      baseUrl: "Base URL",
+      apiKey: "API key",
+      apiKeyPlaceholder: "Leave blank to keep current key",
+      enabled: "Enabled",
+      update: "Update provider"
+    },
+    zh: {
+      required: "请先保存服务商，再编辑设置。",
+      updating: "正在更新服务商...",
+      updateError: "无法更新服务商。",
+      updated: "服务商已更新。",
+      unexpected: "发生意外错误。",
+      title: "编辑服务商",
+      provider: "服务商",
+      name: "服务商名称",
+      type: "类型",
+      official: "OpenAI 官方",
+      compatible: "OpenAI 兼容",
+      custom: "自定义 HTTP",
+      baseUrl: "基础 URL",
+      apiKey: "API 密钥",
+      apiKeyPlaceholder: "留空以保留当前密钥",
+      enabled: "启用",
+      update: "更新服务商"
+    }
+  });
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
     if (!selectedProvider) {
-      setStatus("Save a provider before editing settings.");
+      setStatus(text.required);
       return;
     }
 
@@ -51,7 +95,7 @@ export function ProviderEditForm({ providers }: ProviderEditFormProps) {
       body.apiKey = apiKey;
     }
 
-    setStatus("Updating provider...");
+    setStatus(text.updating);
 
     try {
       const response = await fetch(`/api/admin/providers/${selectedProvider.id}`, {
@@ -61,25 +105,34 @@ export function ProviderEditForm({ providers }: ProviderEditFormProps) {
       });
 
       if (!response.ok) {
-        throw new Error("Could not update provider.");
+        throw new Error(text.updateError);
       }
 
-      setStatus("Provider updated.");
-      window.location.reload();
+      setStatus(text.updated);
+      router.refresh();
     } catch (error) {
-      setStatus(error instanceof Error ? error.message : "Unexpected error.");
+      setStatus(error instanceof Error ? error.message : text.unexpected);
     }
   }
 
   if (!providers.length || !selectedProvider) {
-    return <p role="status">Save a provider before editing settings.</p>;
+    return (
+      <section className="admin-form page-card admin-empty-state">
+        <h2>{text.title}</h2>
+        <p role="status">{text.required}</p>
+      </section>
+    );
   }
 
   return (
-    <form key={selectedProvider.id} onSubmit={handleSubmit}>
-      <h2>Edit provider</h2>
+    <form
+      className="admin-form page-card"
+      key={selectedProvider.id}
+      onSubmit={handleSubmit}
+    >
+      <h2>{text.title}</h2>
       <label>
-        Provider
+        {text.provider}
         <select
           value={providerId}
           onChange={(event) => setProviderId(event.target.value)}
@@ -92,39 +145,39 @@ export function ProviderEditForm({ providers }: ProviderEditFormProps) {
         </select>
       </label>
       <label>
-        Provider name
+        {text.name}
         <input name="name" defaultValue={selectedProvider.name} />
       </label>
       <label>
-        Type
+        {text.type}
         <select name="type" defaultValue={selectedProvider.type}>
-          <option value="OPENAI_OFFICIAL">OpenAI official</option>
-          <option value="OPENAI_COMPATIBLE">OpenAI compatible</option>
-          <option value="CUSTOM_HTTP">Custom HTTP</option>
+          <option value="OPENAI_OFFICIAL">{text.official}</option>
+          <option value="OPENAI_COMPATIBLE">{text.compatible}</option>
+          <option value="CUSTOM_HTTP">{text.custom}</option>
         </select>
       </label>
       <label>
-        Base URL
+        {text.baseUrl}
         <input name="baseUrl" defaultValue={selectedProvider.baseUrl} />
       </label>
       <label>
-        API key
+        {text.apiKey}
         <input
           name="apiKey"
           type="password"
-          placeholder="Leave blank to keep current key"
+          placeholder={text.apiKeyPlaceholder}
         />
       </label>
       <label>
         <input
-          aria-label="Enabled"
+          aria-label={text.enabled}
           name="enabled"
           type="checkbox"
           defaultChecked={selectedProvider.enabled}
         />
-        Enabled
+        {text.enabled}
       </label>
-      <button type="submit">Update provider</button>
+      <button type="submit">{text.update}</button>
       {status ? <p role="status">{status}</p> : null}
     </form>
   );
