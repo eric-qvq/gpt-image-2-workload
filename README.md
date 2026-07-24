@@ -196,6 +196,7 @@ https://gateway.example.com/v1
 ```powershell
 npm.cmd ci
 Copy-Item .env.example .env
+npx.cmd prisma generate
 npx.cmd prisma db push
 npm.cmd run db:seed
 ```
@@ -257,6 +258,7 @@ Docker Compose 使用三个 named volumes：
 ## 测试与构建
 
 ```powershell
+npx.cmd prisma generate
 npm.cmd test -- tests/ui
 npm.cmd test
 npm.cmd run typecheck
@@ -421,6 +423,7 @@ Sign in as an administrator, open `/models`, add an OpenAI or OpenAI-compatible 
 
 ```powershell
 npm.cmd ci
+npx.cmd prisma generate
 npx.cmd prisma db push
 npm.cmd run db:seed
 npm.cmd run dev
@@ -431,6 +434,7 @@ Run `npm.cmd run worker` in a second terminal.
 ## Verification
 
 ```powershell
+npx.cmd prisma generate
 npm.cmd test
 npm.cmd run typecheck
 npm.cmd run build
