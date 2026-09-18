@@ -44,6 +44,8 @@ export function PromptComposer({
       enhance: "Enhance Prompt",
       negative: "Negative Prompt (optional)",
       negativePlaceholder: "Elements to avoid in the interface preview.",
+      characterCount: (count: number) =>
+        `${count} ${count === 1 ? "character" : "characters"}`,
       templateTitle: "Prompt templates",
       enhanceTitle: "Enhance Prompt",
       cancel: "Cancel",
@@ -77,6 +79,7 @@ export function PromptComposer({
       enhance: "增强提示词",
       negative: "反向提示词（可选）",
       negativePlaceholder: "输入希望在界面预览中避免的元素。",
+      characterCount: (count: number) => `${count} 个字符`,
       templateTitle: "提示词模板",
       enhanceTitle: "增强提示词",
       cancel: "取消",
@@ -137,7 +140,6 @@ export function PromptComposer({
             onChange={(event) => setPrompt(event.target.value)}
             placeholder={text.placeholder}
             rows={5}
-            maxLength={1000}
           />
         </label>
         <button
@@ -157,7 +159,6 @@ export function PromptComposer({
             onChange={(event) => setNegativePrompt(event.target.value)}
             placeholder={text.negativePlaceholder}
             rows={2}
-            maxLength={1000}
           />
         </label>
         {disabledReason ? (
@@ -166,7 +167,7 @@ export function PromptComposer({
           </p>
         ) : null}
         <div className="prompt-footer">
-          <span className="muted">{promptLength} / 1000</span>
+          <span className="muted">{text.characterCount(promptLength)}</span>
         </div>
         <PrototypeStatus message={statusMessage} />
       </form>

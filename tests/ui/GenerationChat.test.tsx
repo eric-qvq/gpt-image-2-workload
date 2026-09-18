@@ -9,6 +9,7 @@ import {
   GenerationChat,
   type ChatMessage
 } from "../../src/components/chat/GenerationChat";
+import { ShellStateProvider } from "../../src/components/layout/ShellState";
 
 describe("GenerationChat", () => {
   it("renders the prompt form with its stable id and submits a trimmed prompt", () => {
@@ -30,7 +31,7 @@ describe("GenerationChat", () => {
     expect(form).toHaveAttribute("id", "generation-prompt-form");
     expect(form.closest(".prompt-panel")).toBeTruthy();
     expect(prompt.value).toBe("  Draw a red cube  ");
-    expect(screen.getByText("15 / 1000")).toBeTruthy();
+    expect(screen.getByText("15 characters")).toBeTruthy();
     expect(screen.getByText("Proxy / gpt-image-2")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Generate image" })).toBeNull();
 
@@ -38,6 +39,75 @@ describe("GenerationChat", () => {
 
     expect(onSubmit).toHaveBeenCalledWith("Draw a red cube");
     expect(prompt.value).toBe("");
+  });
+
+  it("accepts and submits prompts longer than 1,000 characters without truncation", () => {
+    const onSubmit = vi.fn();
+    const longPrompt = `  ${"p".repeat(1200)}  `;
+    const longNegativePrompt = "n".repeat(1300);
+
+    render(
+      <GenerationChat
+        formId="generation-prompt-form"
+        messages={[]}
+        onSubmit={onSubmit}
+      />
+    );
+
+    const prompt = screen.getByLabelText("Prompt");
+    const negativePrompt = screen.getByLabelText(
+      "Negative Prompt (optional)"
+    );
+
+    expect(prompt).not.toHaveAttribute("maxlength");
+    expect(negativePrompt).not.toHaveAttribute("maxlength");
+
+    fireEvent.change(prompt, { target: { value: longPrompt } });
+    fireEvent.change(negativePrompt, {
+      target: { value: longNegativePrompt }
+    });
+
+    expect(prompt).toHaveValue(longPrompt);
+    expect(negativePrompt).toHaveValue(longNegativePrompt);
+    expect(screen.getByText("1200 characters")).toBeInTheDocument();
+
+    fireEvent.submit(screen.getByRole("form", { name: "Generation prompt" }));
+
+    expect(onSubmit).toHaveBeenCalledWith("p".repeat(1200));
+    expect(onSubmit).not.toHaveBeenCalledWith(
+      expect.stringContaining(longNegativePrompt)
+    );
+  });
+
+  it("shows the current unlimited Prompt length in Chinese", async () => {
+    window.localStorage.setItem("gpt-image-language", "zh");
+
+    render(
+      <ShellStateProvider initialModelName="gpt-image-2">
+        <GenerationChat
+          formId="generation-prompt-form"
+          initialPrompt="测试提示"
+          messages={[]}
+          onSubmit={vi.fn()}
+        />
+      </ShellStateProvider>
+    );
+
+    expect(await screen.findByText("4 个字符")).toBeInTheDocument();
+    window.localStorage.removeItem("gpt-image-language");
+  });
+
+  it("uses the singular English character label for one character", () => {
+    render(
+      <GenerationChat
+        formId="generation-prompt-form"
+        initialPrompt="a"
+        messages={[]}
+        onSubmit={vi.fn()}
+      />
+    );
+
+    expect(screen.getByText("1 character")).toBeInTheDocument();
   });
 
   it("applies an authored template and submits only the positive prompt", () => {
